@@ -14,10 +14,14 @@ const userSchema = new Schema(
       type: String,
       required: [true, 'Password is required.']
     },
-    username : {
+    username: {
       type: String,
       required: [true, 'Username is required.']
     },
+    status: {
+      type: String,
+      enum: ["Member", "Paid Member", "Premium Member", "Inactive"]
+    }
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`    
