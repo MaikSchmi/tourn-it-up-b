@@ -13,10 +13,10 @@ const tournamentSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ["Joint Effort", "Competition"],
+      enum: ["Cooperative", "Competition"],
       required: true,
     },
-    field: {
+    challenge: {
       type: String,
       required: true,
     },
@@ -30,15 +30,25 @@ const tournamentSchema = new Schema(
     reward: {
       type: String,
     },
-    location: {
+    locationCountry: {
+      type: String,
+      required: true,
+    },
+    locationCity: {
       type: String,
     },
     media: {
       type: [String],
     },
-    additionalInformation: {
+    additionalInfo: {
       type: String,
     },
+    mapUrl: {
+      type: String,
+    },
+    updatePlatformUrl: {
+      type: String,
+    }
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`    

@@ -16,11 +16,15 @@ const userSchema = new Schema(
     },
     username: {
       type: String,
+      unique: true,
       required: [true, 'Username is required.']
     },
     status: {
       type: String,
       enum: ["Member", "Paid Member", "Premium Member", "Inactive"]
+    },
+    slogan: {
+      type: String,
     }
   },
   {
