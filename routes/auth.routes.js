@@ -52,6 +52,24 @@ router.get('/verify', isAuthenticated, (req, res, next) => {
         res.json(req.payload)
     }
 })
+//updateUser
+/*
+router.post("/update", async (req, res, next) => {
+    if (updatedPassword === repeatUpdatedPassword){
+const unpdatedUser = {
+    email: req.body.updatedEmail,
+     username: req.body.updatenUserName ,
+     passwordHash : req.body.updatedPassword
+}
+await User.findOneAndUpdate (req.body.currentUser.email , req, {new: true})
+ 
+res.status(201).json({updatedUser});
+} else {return 'Passwords dont match'}
+ 
+
+}
+  )*/
+
 
 module.exports = router;
 
