@@ -37,9 +37,6 @@ const tournamentSchema = new Schema(
     locationCity: {
       type: String,
     },
-    media: {
-      type: [String],
-    },
     minParticipants: {
       type: Number,
     },

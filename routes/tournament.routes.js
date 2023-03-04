@@ -50,12 +50,11 @@ router.post("/create", async (req, res, next) => {
 router.post("/update/:id", async(req, res, next) => {
   try {
     const tournamentOrganizer = await User.findOne({username: req.body.formDetails.organizer});
-    const newTournament = {
+    const updatedTournamentDetails = {
         name: req.body.formDetails.name,
         description: req.body.formDetails.description,
         type: req.body.formDetails.type,
         challenge: req.body.formDetails.challenge,
-        organizer: tournamentOrganizer._id,
         reward: req.body.formDetails.reward,
         locationCountry: req.body.formDetails.locationCountry,
         locationCity: req.body.formDetails.locationCity,
@@ -64,9 +63,6 @@ router.post("/update/:id", async(req, res, next) => {
         updatePlatformUrl: req.body.formDetails.updatePlatformUrl,
         maxParticipants: req.body.formDetails.maxParticipants,
         minParticipants: req.body.formDetails.minParticipants,
-        status: "Open",
-        professionsRequired: req.body.formDetails.professionsRequired,
-        professions: req.body.formDetails.professions,
         startDate: req.body.formDetails.startDate,
         endDate: req.body.formDetails.endDate
     }
@@ -77,18 +73,22 @@ router.post("/update/:id", async(req, res, next) => {
     const yyyy = today.getFullYear();
     today = yyyy + "-" + mm + "-" + dd;
 
-    if (newTournament.name === "" || newTournament.description === "" || newTournament.type === "" ||
-    newTournament.challenge === "" || newTournament.organizer === "" || newTournament.locationCountry === "" ||
-    !req.body.formDetails.tosChecked || newTournament.endDate < newTournament.startDate || newTournament.startDate <= today) {
+    console.log(updatedTournamentDetails)
+
+    if (updatedTournamentDetails.name === "" || updatedTournamentDetails.description === "" || updatedTournamentDetails.type === "" ||
+    updatedTournamentDetails.challenge === "" || updatedTournamentDetails.organizer === "" || updatedTournamentDetails.locationCountry === "" ||
+    !req.body.formDetails.tosChecked || updatedTournamentDetails.endDate < updatedTournamentDetails.startDate || updatedTournamentDetails.startDate <= today) {
       res.status(400).json("Please fill out all the required fields.");
     } else {
-      const createdTournament = await Tournament.create(newTournament);
-      res.status(200).json(createdTournament._id);
+      await Tournament.findByIdAndUpdate(req.params.id, updatedTournamentDetails, {new: true});
+      res.status(200).json(req.params.id);
     }
   } catch (error) {
-    res.status(400).json("Error creating the tournament: ", error);
+    console.log("ERROR: ", error);
+    res.status(400).json("Error updating the tournament: ", error);
   }
 });
+
 
 router.post("/delete/:id", async (req, res, next) => {
   const tournamentId = req.params.id;
