@@ -40,6 +40,12 @@ const tournamentSchema = new Schema(
     media: {
       type: [String],
     },
+    minParticipants: {
+      type: Number,
+    },
+    maxParticipants: {
+      type: Number,
+    },
     additionalInfo: {
       type: String,
     },
@@ -48,6 +54,24 @@ const tournamentSchema = new Schema(
     },
     updatePlatformUrl: {
       type: String,
+    },
+    status: {
+      type: String,
+      enum: ["Open", "Closed", "OngoingOpen", "OngoingClosed", "Ended"],
+      default: "Open",
+    },
+    professionsRequired: {
+      type: Boolean,
+      default: false
+    },
+    professions: {
+      type: [String],
+    },
+    startDate: {
+      type: String,
+    }, 
+    endDate: {
+      type: String
     }
   },
   {
