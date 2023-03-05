@@ -5,7 +5,23 @@ const jwt = require ('jsonwebtoken')
 const isAuthenticated = require('../middlewares/jwt.middleware')
 
 router.post("/signup", async (req, res, next) => {
+    console.log(req.body)
     const { email, username } = req.body 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) {
+        res.status(400).json({message: "Please provide a valid email address."});
+        return;
+    }
+    const passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/;
+    if (!passwordRegex.test(req.body.password)) {
+        res.status(400).json({message: "The password must be at least 6 (six) characters long, contain at least 1 (one) number and one lowercase and uppercase letter."});
+        return;
+    }
+    if (req.body.password !== req.body.repeatPassword) {
+        res.status(400).json({message: "The passwords do not match."});
+        return;
+    }
+
     const passwordHash = bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(14) )
     try {
         const user = await User.create({
@@ -16,7 +32,8 @@ router.post("/signup", async (req, res, next) => {
         const createdUser = {email: user.email, username: user.username}
         res.status(201).json({createdUser});
     }catch(error) {
-        console.log (error)
+        console.log(error)
+        res.status(403).json({message: "Server Error or user / email already registered."})
     }
 });
 
@@ -44,6 +61,7 @@ router.post('/login', async (req, res, next) => {
         }
     } catch(error) {
         console.log (error)
+        res.status(404).json({message: "User not found or incorrect credentials."})
     }
 });
 
