@@ -240,6 +240,47 @@ router.get("/:id", async (req, res, next) => {
 });
 
 
+router.get("/name/:name", async (req, res, next) => {
+  try {
+    // Get Tournament
+    const oneTournament = await Tournament.findOne({name: req.params.name})
+    .populate({
+      path: "participants",
+      select: "username",
+      model: "User"
+    }).populate({
+      path: "organizer",
+      select: "username",
+      model: "User"
+    }).populate({
+      path:"comments",
+      model: "Comment"
+    })
+    if (oneTournament === null) {
+      console.log("YA ITS NULL MAN")
+      res.status(404).json("Tournament not found");
+    } else {
+      const promiseArr = [];
+      promiseArr.push(await User.findById(oneTournament.organizer));
+      for (let i = 0; i < oneTournament.participants.length; i++) {
+        promiseArr.push(await User.findById(oneTournament.participants[i]));
+      }
+      // Get Participants
+      const participantArr = [];
+      const participants = await Promise.all(promiseArr);
+      for (i = 0; i < participants.length; i++) {
+        participantArr.push({id: JSON.stringify(participants[i]._id).split(`"`)[1], username: participants[i].username})
+      }
+  
+      res.status(200).json({tournament: oneTournament, participants: participantArr});
+    }
+  } catch (error) {
+    console.log("Error fetching tournament: ", error);
+    res.status(404).json("Tournament not found: ", error);
+  }
+});
+
+
 router.post("/comments/add", async (req, res, next) => {
   if (req.body.comment === "") {
     res.status(400).json("Please write something before posting.");
