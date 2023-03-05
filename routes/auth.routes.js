@@ -100,22 +100,23 @@ router.post("/update-interests/:username", async (req, res, next) => {
 
 
 //updateUser
-/*
-router.post("/update", async (req, res, next) => {
-    if (updatedPassword === repeatUpdatedPassword){
-const unpdatedUser = {
+
+/*router.post('/profile/settings', async (req, res, next) => {
+  
+const updatedUser = {
     email: req.body.updatedEmail,
-     username: req.body.updatenUserName ,
+     username: req.body.updatedUserName ,
      passwordHash : req.body.updatedPassword
-}
-await User.findOneAndUpdate (req.body.currentUser.email , req, {new: true})
+} 
+ if ( updatedUser.updatedPassword === updatedUser.repeatUpdatedPassword){
+await User.findOneAndUpdate (req.body.currentUser , req.body.updatedUser, {new: true})
  
 res.status(201).json({updatedUser});
 } else {return 'Passwords dont match'}
  
 
-}
-  )*/
+} 
+  ) */
 
 
 module.exports = router;
