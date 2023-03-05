@@ -1,3 +1,4 @@
+const Comment = require("../models/Comment.model");
 const Tournament = require("../models/Tournament.model");
 const User = require("../models/User.model");
 
@@ -5,6 +6,7 @@ const router = require("express").Router();
 
 
 const syncTournamentEntries = async () => {
+  // Update Tournament Statuses
   let today = new Date();
   const dd = String(today.getDate()).padStart(2, "0");
   const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -14,9 +16,10 @@ const syncTournamentEntries = async () => {
   const allTournaments = await Tournament.find();
   const promiseArr = [];
   for (let i = 0; i < allTournaments.length; i++) {
-    if (allTournaments[i].startDate >= today || (allTournaments[i].maxParticipants > 0 && allTournaments[i].participants.length + 1 >= allTournaments[i].maxParticipants)) {
+    if (allTournaments[i].startDate <= today || (allTournaments[i].maxParticipants > 0 && allTournaments[i].participants.length + 1 >= allTournaments[i].maxParticipants)) {
       promiseArr.push(await Tournament.findByIdAndUpdate(allTournaments[i]._id, {status: "Closed"}))
-    } else if (allTournaments[i].endDate < today) {
+    } 
+    if (allTournaments[i].endDate < today) {
       promiseArr.push(await Tournament.findByIdAndUpdate(allTournaments[i]._id, {status: "Ended"}))
     }
   }
@@ -132,31 +135,52 @@ router.post("/delete/:id", async (req, res, next) => {
 
 router.post("/updateparticipants/:id/", async (req, res, next) => {
   const tournamentId = req.params.id;
-  const newParticipant = req.body.user
+  const participant = req.body.user
   try {
-    const newParticipantInDb = await User.findOne({username: newParticipant.username});
-    if (newParticipantInDb) {
+    const participantInDb = await User.findOne({username: participant.username});
+    if (participantInDb) {
       const updatedTournament = await Tournament.findById(tournamentId).populate("participants");
-      let userRegistered = false;
-      const newParticipantId = JSON.stringify(newParticipantInDb._id).split(`"`)[1]
-      for (let i = 0; i < updatedTournament.participants.length; i++) {
-        const currentParticipantId = JSON.stringify(updatedTournament.participants[i]).split(`"`)[1];
-        if (currentParticipantId === newParticipantId) {
-          userRegistered = true;
-          break;
+      if (req.body.signup) {
+        let userRegistered = false;
+        const newParticipantId = JSON.stringify(participantInDb._id).split(`"`)[1]
+        for (let i = 0; i < updatedTournament.participants.length; i++) {
+          const currentParticipantId = JSON.stringify(updatedTournament.participants[i]).split(`"`)[1];
+          if (currentParticipantId === newParticipantId) {
+            userRegistered = true;
+            break;
+          }
+        } 
+        if (!userRegistered) {
+          updatedTournament.participants.push(participantInDb._id);
+          if (updatedTournament.participants.length + 1 >= updatedTournament.maxParticipants) updatedTournament.status = "Closed";
+          await updatedTournament.save();
+          res.status(201).json("Added new participant");
+        } else {
+          res.status(403).json("You are already registered for this tournament.");
         }
-      } 
-      if (!userRegistered) {
-        updatedTournament.participants.push(newParticipantInDb._id);
-        if (updatedTournament.participants.length + 1 >= updatedTournament.maxParticipants) updatedTournament.status = "Closed";
-        await updatedTournament.save();
-        res.status(201).json("Added new participant");
-      } else {
-        res.status(403).json("You are already registered for this tournament.");
+      } else if (req.body.resign) {
+        let userRegistered = false;
+        const currentParticipantId = JSON.stringify(participantInDb._id).split(`"`)[1];
+        let index = -1;
+        for (let i = 0; i < updatedTournament.participants.length; i++) {
+          const checkParticipantId = JSON.stringify(updatedTournament.participants[i]).split(`"`)[1];
+          if (checkParticipantId === currentParticipantId) {
+            index = i;
+            userRegistered = true;
+            break;
+          }
+        }
+        if (userRegistered) {
+          updatedTournament.participants.splice(index, 1);
+          await updatedTournament.save();
+          res.status(201).json("Removed participant")
+        } else {
+          res.status(400).json("Error finding participant");
+        }
       }
     }
   } catch (error) {
-    res.status(400).json("Error adding participant: ", error);
+    res.status(400).json("Error: ", error);
   }
 });
 
@@ -184,7 +208,19 @@ router.get("/all", async (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
   try {
     // Get Tournament
-    const oneTournament = await Tournament.findById(req.params.id);
+    const oneTournament = await Tournament.findById(req.params.id)
+    .populate({
+      path: "participants",
+      select: "username",
+      model: "User"
+    }).populate({
+      path: "organizer",
+      select: "username",
+      model: "User"
+    }).populate({
+      path:"comments",
+      model: "Comment"
+    })
     const promiseArr = [];
     promiseArr.push(await User.findById(oneTournament.organizer));
     for (let i = 0; i < oneTournament.participants.length; i++) {
@@ -200,6 +236,52 @@ router.get("/:id", async (req, res, next) => {
     res.status(200).json({tournament: oneTournament, participants: participantArr});
   } catch (error) {
     console.log("Error fetching tournament: ", error);
+  }
+});
+
+
+router.post("/comments/add", async (req, res, next) => {
+  if (req.body.comment === "") {
+    res.status(400).json("Please write something before posting.");
+  } else {
+    try {
+      const tournament = await Tournament.findById(req.body.tournamentId);
+      let newComment = {
+        comment: req.body.comment,
+        username: req.body.username
+      }
+      
+      const newCommentInDb = await Comment.create(newComment);
+      tournament.comments.push(newCommentInDb._id);
+      await tournament.save();
+      res.status(201).json("Added new comment successfully");
+    } catch (error) {
+      console.log("Error creating post: ", error);
+      res.status(400).json("Error creating post: ", error);
+    }
+  }
+});
+
+
+router.post("/comments/delete/:id", async (req, res, next) => {
+  try {
+    const commentId = req.params.id;
+    const tournament = await Tournament.findById(req.body.tournamentId);
+    let index = -1;
+    for (let i = 0; i < tournament.comments.length; i++) {
+      const comment = JSON.stringify(tournament.comments[i]).split(`"`)[1]
+      if (comment === commentId) {
+        index = i;
+        break;
+      }
+    }
+    tournament.comments.splice(index, 1);
+    await tournament.save();
+    await Comment.findByIdAndDelete(commentId);
+    res.status(201).json("Post deleted successfully");
+  } catch (error) {
+    console.log("Error deleting post: ", error),
+    res.status(400).json("Error deleting post: ", error)
   }
 });
 

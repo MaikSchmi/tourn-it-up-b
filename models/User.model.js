@@ -25,7 +25,10 @@ const userSchema = new Schema(
     },
     slogan: {
       type: String,
-    }
+    },
+    interest: {
+      type: [String],
+    },
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`    

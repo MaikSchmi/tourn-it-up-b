@@ -69,6 +69,9 @@ const tournamentSchema = new Schema(
     }, 
     endDate: {
       type: String
+    },
+    comments: {
+      type: [Schema.Types.ObjectId],
     }
   },
   {
