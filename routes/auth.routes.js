@@ -7,6 +7,18 @@ const isAuthenticated = require('../middlewares/jwt.middleware')
 router.post("/signup", async (req, res, next) => {
     console.log(req.body)
     const { email, username } = req.body 
+
+    try {
+        const findUser = await User.find({username: username}) 
+        if (findUser.length) {
+            res.status(400).json({message: "Username already registered"})
+            return;
+        }
+    } catch (error) {
+        console.log(error);
+        return;
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
     if (!emailRegex.test(email)) {
         res.status(400).json({message: "Please provide a valid email address."});
@@ -54,10 +66,10 @@ router.post('/login', async (req, res, next) => {
                 }) 
                 res.status(200).json({token})
             } else {
-                res.status(403).json({message : 'invalid credentials'})
+                res.status(403).json({message : 'User not found or incorrect credentials.'})
             }
         } else {
-            res.status(404).json({message: "User not found"})
+            res.status(404).json({message: "User not found or incorrect credentials."})
         }
     } catch(error) {
         console.log (error)
