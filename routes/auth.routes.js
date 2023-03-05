@@ -44,7 +44,7 @@ router.post('/login', async (req, res, next) => {
         if (getUser.length) {
             const passwordMatch = bcrypt.compareSync(req.body.password, getUser[0].passwordHash)
             if (passwordMatch) {
-                const payload = {_id: getUser[0]._id, email: getUser[0].email, username: getUser[0].username, status: getUser[0].status, tournaments: getUser[0].tournaments }
+                const payload = {_id: getUser[0]._id, email: getUser[0].email, username: getUser[0].username, status: getUser[0].status, tournaments: getUser[0].tournaments, interest: getUser[0].interest }
                 const token = jwt.sign(
                 payload,
                 process.env.TOKEN_SECRET,
@@ -69,7 +69,24 @@ router.get('/verify', isAuthenticated, (req, res, next) => {
     if (req.payload) {
         res.json(req.payload)
     }
-})
+});
+
+router.post("/update-interests/:username", async (req, res, next) => {
+    console.log(req.body, req.params.username)
+    try {
+        const updatedUser = await User.findOne({username: req.params.username});
+        for (let i = 0; i < req.body.updateInterestsInDb.length; i++) {
+            updatedUser.interest.push(req.body.updateInterestsInDb[i]);
+        }
+        await updatedUser.save();
+        res.status(201).json({message: "Updated interests", interest: updatedUser.interest})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({message: "Server Error"});
+    }
+});
+
+
 //updateUser
 /*
 router.post("/update", async (req, res, next) => {
