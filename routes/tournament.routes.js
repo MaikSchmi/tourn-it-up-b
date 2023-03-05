@@ -60,10 +60,12 @@ router.post("/create", async (req, res, next) => {
     if (newTournament.name === "" || newTournament.description === "" || newTournament.type === "" ||
     newTournament.challenge === "" || newTournament.organizer === "" || newTournament.locationCountry === "" ||
     !req.body.formDetails.tosChecked || newTournament.endDate < newTournament.startDate || newTournament.startDate <= today ||
-    newTournament.maxParticipants < newTournament.participants || ((newTournament.maxParticipants > 0 & newTournament.minParticipants > 0) && newTournament.maxParticipants < newTournament.minParticipants)) {
+    ((newTournament.maxParticipants > 0 & newTournament.minParticipants > 0) && newTournament.maxParticipants < newTournament.minParticipants)) {
       res.status(400).json("Please fill out all the required fields.");
     } else {
       const createdTournament = await Tournament.create(newTournament);
+      tournamentOrganizer.tournaments.push(createdTournament._id);
+      await tournamentOrganizer.save();
       res.status(200).json(createdTournament._id);
     }
   } catch (error) {
@@ -96,11 +98,11 @@ router.post("/update/:id", async(req, res, next) => {
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const yyyy = today.getFullYear();
     today = yyyy + "-" + mm + "-" + dd;
-
+    console.log(updatedTournamentDetails.maxParticipants, updatedTournamentDetails.minParticipants)
     if (updatedTournamentDetails.name === "" || updatedTournamentDetails.description === "" || updatedTournamentDetails.type === "" ||
     updatedTournamentDetails.challenge === "" || updatedTournamentDetails.organizer === "" || updatedTournamentDetails.locationCountry === "" ||
     !req.body.formDetails.tosChecked || updatedTournamentDetails.endDate < updatedTournamentDetails.startDate || updatedTournamentDetails.startDate <= today ||
-    updatedTournamentDetails.maxParticipants < tournament.participants || ((updatedTournamentDetails.maxParticipants > 0 & updatedTournamentDetails.minParticipants > 0) && updatedTournamentDetails.maxParticipants < updatedTournamentDetails.minParticipants)) {
+    ((updatedTournamentDetails.maxParticipants > 0 && updatedTournamentDetails.minParticipants > 0) && updatedTournamentDetails.maxParticipants < updatedTournamentDetails.minParticipants)) {
       res.status(400).json("Please fill out all the required fields.");
     } else {
       await Tournament.findByIdAndUpdate(req.params.id, updatedTournamentDetails, {new: true});
@@ -118,12 +120,21 @@ router.post("/update/:id", async(req, res, next) => {
 router.post("/delete/:id", async (req, res, next) => {
   const tournamentId = req.params.id;
   const deletingUser = req.body.user.username;
-  console.log(req.body)
   try {
     const tournament = await Tournament.findById(tournamentId);
     const organizer = await User.findById(tournament.organizer);
     if (deletingUser === organizer.username) {
-      await Tournament.findByIdAndDelete(tournamentId);
+      let index = -1;
+      for (let i = 0; i < organizer.tournaments.length; i++) {
+        const checkTournamentId = JSON.stringify(organizer.tournaments[i]._id).split(`"`)[1]
+        if (checkTournamentId === tournamentId) {
+          index = i;
+          break;
+        }
+      }
+      organizer.tournaments.splice(index, 1);
+      await organizer.save();
+      await Tournament.findByIdAndDelete(tournamentId); 
       res.status(201).json("Tournament deleted successfully");
     } else {
       res.status(403).json("Not authorized to delete Tournament!");
@@ -152,28 +163,40 @@ router.post("/updateparticipants/:id/", async (req, res, next) => {
         } 
         if (!userRegistered) {
           updatedTournament.participants.push(participantInDb._id);
+          participantInDb.tournaments.push(updatedTournament._id);
+          await participantInDb.save();
           if (updatedTournament.participants.length + 1 >= updatedTournament.maxParticipants) updatedTournament.status = "Closed";
           await updatedTournament.save();
-          res.status(201).json("Added new participant");
+          res.status(201).json({tournamentId: updatedTournament._id, user: participantInDb});
         } else {
           res.status(403).json("You are already registered for this tournament.");
         }
       } else if (req.body.resign) {
         let userRegistered = false;
         const currentParticipantId = JSON.stringify(participantInDb._id).split(`"`)[1];
-        let index = -1;
+        let participantIndex = -1;
         for (let i = 0; i < updatedTournament.participants.length; i++) {
           const checkParticipantId = JSON.stringify(updatedTournament.participants[i]).split(`"`)[1];
           if (checkParticipantId === currentParticipantId) {
-            index = i;
+            participantIndex = i;
             userRegistered = true;
             break;
           }
         }
+        let tournamentIndex = -1;
+        for (let i = 0; i < participantInDb.tournaments.length; i++) {
+          const checkTournamentId = JSON.stringify(participantInDb.tournaments[i]).split(`"`)[1];
+          if (checkTournamentId === tournamentId) {
+            tournamentIndex = i;
+            break;
+          }
+        }
         if (userRegistered) {
-          updatedTournament.participants.splice(index, 1);
+          updatedTournament.participants.splice(participantIndex, 1);
           await updatedTournament.save();
-          res.status(201).json("Removed participant")
+          participantInDb.tournaments.splice(tournamentIndex, 1);
+          await participantInDb.save();
+          res.status(201).json({tournamentId: updatedTournament._id, user: participantInDb})
         } else {
           res.status(400).json("Error finding participant");
         }

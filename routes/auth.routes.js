@@ -27,7 +27,7 @@ router.post('/login', async (req, res, next) => {
         if (getUser.length) {
             const passwordMatch = bcrypt.compareSync(req.body.password, getUser[0].passwordHash)
             if (passwordMatch) {
-                const payload = {_id: getUser[0]._id, email: getUser[0].email, username: getUser[0].username }
+                const payload = {_id: getUser[0]._id, email: getUser[0].email, username: getUser[0].username, status: getUser[0].status, tournaments: getUser[0].tournaments }
                 const token = jwt.sign(
                 payload,
                 process.env.TOKEN_SECRET,

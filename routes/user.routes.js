@@ -4,14 +4,16 @@ const User = require("../models/User.model");
 router.post("/update-membership-plan", async (req, res, next) => {
   try {
     const updateUser = await User.findOne({username: req.body.user})
+    let newStatus = "";
     if (req.body.plan === "free") {
-      updateUser.status = "Member";
+      newStatus = "Member";
     } else if (req.body.plan === "paid") {
-      updateUser.status = "Paid Member";
+      newStatus = "Paid Member";
     } else if (req.body.plan === "premium") {
-      updateUser.status = "Premium Member";
+      newStatus = "Premium Member";
     }
-    await updateUser.save();
+    const nowUpdatedUser = await User.findOneAndUpdate({username: req.body.user}, {status: newStatus}, {new: true})
+    console.log(nowUpdatedUser);
     res.status(201).json("User updated successfully");
   } catch (error) {
     console.log("Error updating the user status: ", error),

@@ -30,6 +30,9 @@ const userSchema = new Schema(
     interest: {
       type: [String],
     },
+    tournaments: {
+      type: [Schema.Types.ObjectId]
+    }
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`    
