@@ -21,7 +21,8 @@ const userSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Member", "Paid Member", "Premium Member", "Inactive"]
+      enum: ["Member", "Paid Member", "Premium Member", "Inactive"],
+      default: "Member"
     },
     slogan: {
       type: String,
