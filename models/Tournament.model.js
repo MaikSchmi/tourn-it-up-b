@@ -54,7 +54,7 @@ const tournamentSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Open", "Closed", "OngoingOpen", "OngoingClosed", "Ended"],
+      enum: ["Open", "Closed", "Ended"],
       default: "Open",
     },
     professionsRequired: {

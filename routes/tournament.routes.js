@@ -4,6 +4,26 @@ const User = require("../models/User.model");
 const router = require("express").Router();
 
 
+const syncTournamentEntries = async () => {
+  let today = new Date();
+  const dd = String(today.getDate()).padStart(2, "0");
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const yyyy = today.getFullYear();
+  today = yyyy + "-" + mm + "-" + dd;
+
+  const allTournaments = await Tournament.find();
+  const promiseArr = [];
+  for (let i = 0; i < allTournaments.length; i++) {
+    if (allTournaments[i].startDate >= today || (allTournaments[i].maxParticipants > 0 && allTournaments[i].participants.length + 1 >= allTournaments[i].maxParticipants)) {
+      promiseArr.push(await Tournament.findByIdAndUpdate(allTournaments[i]._id, {status: "Closed"}))
+    } else if (allTournaments[i].endDate < today) {
+      promiseArr.push(await Tournament.findByIdAndUpdate(allTournaments[i]._id, {status: "Ended"}))
+    }
+  }
+  if (promiseArr.length) Promise.all(promiseArr);
+}
+
+
 router.post("/create", async (req, res, next) => {
   try {
     const tournamentOrganizer = await User.findOne({username: req.body.formDetails.organizer});
@@ -36,7 +56,8 @@ router.post("/create", async (req, res, next) => {
 
     if (newTournament.name === "" || newTournament.description === "" || newTournament.type === "" ||
     newTournament.challenge === "" || newTournament.organizer === "" || newTournament.locationCountry === "" ||
-    !req.body.formDetails.tosChecked || newTournament.endDate < newTournament.startDate || newTournament.startDate <= today) {
+    !req.body.formDetails.tosChecked || newTournament.endDate < newTournament.startDate || newTournament.startDate <= today ||
+    newTournament.maxParticipants < newTournament.participants || ((newTournament.maxParticipants > 0 & newTournament.minParticipants > 0) && newTournament.maxParticipants < newTournament.minParticipants)) {
       res.status(400).json("Please fill out all the required fields.");
     } else {
       const createdTournament = await Tournament.create(newTournament);
@@ -49,7 +70,7 @@ router.post("/create", async (req, res, next) => {
 
 router.post("/update/:id", async(req, res, next) => {
   try {
-    const tournamentOrganizer = await User.findOne({username: req.body.formDetails.organizer});
+    const tournament = await Tournament.findById(req.params.id);
     const updatedTournamentDetails = {
         name: req.body.formDetails.name,
         description: req.body.formDetails.description,
@@ -73,14 +94,15 @@ router.post("/update/:id", async(req, res, next) => {
     const yyyy = today.getFullYear();
     today = yyyy + "-" + mm + "-" + dd;
 
-    console.log(updatedTournamentDetails)
-
     if (updatedTournamentDetails.name === "" || updatedTournamentDetails.description === "" || updatedTournamentDetails.type === "" ||
     updatedTournamentDetails.challenge === "" || updatedTournamentDetails.organizer === "" || updatedTournamentDetails.locationCountry === "" ||
-    !req.body.formDetails.tosChecked || updatedTournamentDetails.endDate < updatedTournamentDetails.startDate || updatedTournamentDetails.startDate <= today) {
+    !req.body.formDetails.tosChecked || updatedTournamentDetails.endDate < updatedTournamentDetails.startDate || updatedTournamentDetails.startDate <= today ||
+    updatedTournamentDetails.maxParticipants < tournament.participants || ((updatedTournamentDetails.maxParticipants > 0 & updatedTournamentDetails.minParticipants > 0) && updatedTournamentDetails.maxParticipants < updatedTournamentDetails.minParticipants)) {
       res.status(400).json("Please fill out all the required fields.");
     } else {
       await Tournament.findByIdAndUpdate(req.params.id, updatedTournamentDetails, {new: true});
+      if (tournament.maxParticipants === tournament.participants.length + 1) tournament.status = "Closed";
+      await tournament.save();
       res.status(200).json(req.params.id);
     }
   } catch (error) {
@@ -126,6 +148,7 @@ router.post("/updateparticipants/:id/", async (req, res, next) => {
       } 
       if (!userRegistered) {
         updatedTournament.participants.push(newParticipantInDb._id);
+        if (updatedTournament.participants.length + 1 >= updatedTournament.maxParticipants) updatedTournament.status = "Closed";
         await updatedTournament.save();
         res.status(201).json("Added new participant");
       } else {
@@ -137,14 +160,26 @@ router.post("/updateparticipants/:id/", async (req, res, next) => {
   }
 });
 
+
 router.get("/all", async (req, res, next) => {
+  syncTournamentEntries();
   try {
-    const allTournaments = await Tournament.find();
+    const allTournaments = await Tournament.find().populate({
+      path: "participants",
+      select: "username",
+      model: "User"
+    }).populate({
+      path: "organizer",
+      select: "username",
+      model: "User"
+    });
+
     res.status(200).json(allTournaments);
   } catch(error) {
     console.log("Error fetching tournaments: ", error);
   }
 });
+
 
 router.get("/:id", async (req, res, next) => {
   try {
