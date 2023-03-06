@@ -138,10 +138,10 @@ router.post('/profile/settings', async (req, res, next) => {
                 return
             }
         }
+
         const currentUser = await User.find ({email : req.body.currentUser.email})
         console.log(currentUser);
         const passwordMatch = bcrypt.compareSync(req.body.password, currentUser[0].passwordHash)
-        console.log(req.body.password, currentUser[0].passwordHash);
         if (passwordMatch) {
             let updatedUser = {} 
             if (req.body.updatedPassword !== '' && req.body.repeatUpdatedPassword !== '' ) {
@@ -152,19 +152,21 @@ router.post('/profile/settings', async (req, res, next) => {
                         username: req.body.updatedUserName ,
                         passwordHash : updatedPasswordHash
                     }
+                    
                     const updatedUserDB = await User.findOneAndUpdate({email :req.body.currentUser.email }, updatedUser , {new : true} )
-                    req.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username })
+                    res.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username , password : req.body.updatedPassword })
                 } else { 
-                    req.status(400).json({message: "The passwords do not match."})
+                    res.status(400).json({message: "The passwords do not match."})
                     return
                 }
             } else { 
                 updatedUser = {
                     email: req.body.updatedEmail,
                     username: req.body.updatedUserName ,
+                    
                 }
                 const updatedUserDB = await User.findOneAndUpdate({email :req.body.currentUser.email }, updatedUser , {new : true})
-                req.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username })
+                res.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username })
             
             }
         } else {
