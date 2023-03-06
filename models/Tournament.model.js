@@ -72,6 +72,12 @@ const tournamentSchema = new Schema(
     },
     comments: {
       type: [Schema.Types.ObjectId],
+    },
+    backgroundImage: {
+      type: String,
+    },
+    media: {
+      type: [String],
     }
   },
   {

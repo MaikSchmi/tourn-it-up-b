@@ -1,6 +1,7 @@
 const Comment = require("../models/Comment.model");
 const Tournament = require("../models/Tournament.model");
 const User = require("../models/User.model");
+const fileUploader = require("../config/cloudinary.config");
 
 const router = require("express").Router();
 
@@ -347,6 +348,15 @@ router.post("/comments/delete/:id", async (req, res, next) => {
     console.log("Error deleting post: ", error),
     res.status(400).json("Error deleting post: ", error)
   }
+});
+
+
+router.post("/upload", fileUploader.single("imageUrl"), (req, res, next) => {
+  if (!req.file) {
+    next(new Error("No file uploaded!"));
+    return;
+  }  
+  res.json({ fileUrl: req.file.path });
 });
 
 module.exports = router;
