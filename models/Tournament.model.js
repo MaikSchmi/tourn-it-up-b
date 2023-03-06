@@ -76,6 +76,12 @@ const tournamentSchema = new Schema(
     backgroundImage: {
       type: String,
     },
+    backgroundColor: {
+      type: String,
+    },
+    textColor: {
+      type: String,
+    },
     media: {
       type: [String],
     }

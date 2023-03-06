@@ -67,7 +67,7 @@ router.post("/create", async (req, res, next) => {
       const createdTournament = await Tournament.create(newTournament);
       tournamentOrganizer.tournaments.push(createdTournament._id);
       await tournamentOrganizer.save();
-      res.status(200).json(createdTournament._id);
+      res.status(200).json({tournamentId: createdTournament._id});
     }
   } catch (error) {
     res.status(400).json("Error creating the tournament: ", error);
@@ -327,6 +327,24 @@ router.post("/comments/add", async (req, res, next) => {
   }
 });
 
+router.post("/upload/:tournamentId", fileUploader.single("imageUrl"), async (req, res, next) => {
+  if (!req.file) {
+    next(new Error("No file uploaded!"));
+    return;
+  }
+  await Tournament.findByIdAndUpdate(req.params.tournamentId, {backgroundImage: req.file.path})
+  res.json({ fileUrl: req.file.path });
+});
+
+router.post("/update-values/:tournamentId", async (req, res, next) => {
+  try {
+    await Tournament.findByIdAndUpdate(req.params.tournamentId, {textColor: req.body.textColor, backgroundColor: req.body.backgroundColor});
+    res.status(200).json("Updated successfully");;
+  } catch(error) {
+    console.log(error);
+    res.status(400).json("Unable to update: ", error);
+  }
+});
 
 router.post("/comments/delete/:id", async (req, res, next) => {
   try {
