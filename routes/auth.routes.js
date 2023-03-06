@@ -138,7 +138,6 @@ router.post('/profile/settings', async (req, res, next) => {
                 return
             }
         }
-
         const currentUser = await User.find ({email : req.body.currentUser.email})
         console.log(currentUser);
         const passwordMatch = bcrypt.compareSync(req.body.password, currentUser[0].passwordHash)
@@ -148,11 +147,10 @@ router.post('/profile/settings', async (req, res, next) => {
                 if (req.body.updatedPassword === req.body.repeatUpdatedPassword) {
                     const updatedPasswordHash = bcrypt.hashSync(req.body.updatedPassword, bcrypt.genSaltSync(14))
                     updatedUser = {
-                        email: req.body.updatedEmail,
-                        username: req.body.updatedUserName ,
+                        email: req.body.email,
+                        username: req.body.username ,
                         passwordHash : updatedPasswordHash
                     }
-                    
                     const updatedUserDB = await User.findOneAndUpdate({email :req.body.currentUser.email }, updatedUser , {new : true} )
                     res.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username , password : req.body.updatedPassword })
                 } else { 
@@ -161,13 +159,11 @@ router.post('/profile/settings', async (req, res, next) => {
                 }
             } else { 
                 updatedUser = {
-                    email: req.body.updatedEmail,
-                    username: req.body.updatedUserName ,
-                    
+                    email: req.body.email,
+                    username: req.body.username 
                 }
-                const updatedUserDB = await User.findOneAndUpdate({email :req.body.currentUser.email }, updatedUser , {new : true})
-                res.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username })
-            
+                const updatedUserDB = await User.findOneAndUpdate({email :req.body.currentUser.email }, updatedUser , {new : true});
+                res.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username });
             }
         } else {
             res.status(403).json({message: "incorrect Password."})

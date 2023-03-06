@@ -78,9 +78,11 @@ const tournamentSchema = new Schema(
     },
     backgroundColor: {
       type: String,
+      default: "#00000000",
     },
     textColor: {
       type: String,
+      default: "#FFFFFF",
     },
     media: {
       type: [String],
