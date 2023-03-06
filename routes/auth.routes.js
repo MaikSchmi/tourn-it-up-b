@@ -101,22 +101,72 @@ router.post("/update-interests/:username", async (req, res, next) => {
 
 //updateUser
 
-/*router.post('/profile/settings', async (req, res, next) => {
-  
-const updatedUser = {
-    email: req.body.updatedEmail,
+router.post('/profile/settings', async (req, res, next) => {
+    const { email, username } = req.body 
+try { 
+    const findUser = await User.find({username})
+    const findEmail = await User.find({email})
+    if (findEmail.length || findUser.length) {
+        res.status(400).json({message: "Username or email already registered"})
+   return
+ }
+    else {
+const currentUser = await User.find ({email : req.body.currentUser.email})
+const passwordMatch = bcrypt.compareSync(req.body.password, currentUser[0].passwordHash)
+if (passwordMatch){
+   let updatedUser = {} 
+if(req.body.updatedPassword !== '' && req.body.repeatUpdatedPassword !== '' ){
+if( req.body.updatedPassword === req.body.repeatUpdatedPassword){
+    const updatedPasswordHash = bcrypt.hashSync(req.body.updatedPassword, bcrypt.genSaltSync(14) )
+ updatedUser = {
+            
+        email: req.body.updatedEmail,
+         username: req.body.updatedUserName ,
+        passwordHash : updatedPasswordHash
+    }
+}
+else{ 
+ req.status(400).json({message: "The passwords do not match."})
+return
+}}
+else { updatedUser = {
+ email: req.body.updatedEmail,
      username: req.body.updatedUserName ,
-     passwordHash : req.body.updatedPassword
 } 
+
+}
+
+
+}else{
+    res.status(403).json({message: "incorrect Password."})
+    return 
+}
+}
+
+
+
+)
+
+        
+
+
+
+    }
+
+} catch (error) {
+    
+}
+
+
  if ( updatedUser.updatedPassword === updatedUser.repeatUpdatedPassword){
-await User.findOneAndUpdate (req.body.currentUser , req.body.updatedUser, {new: true})
+await User.findOneAndUpdate ({email : req.body.currentUser.email} , updatedUser , {new: true})
  
 res.status(201).json({updatedUser});
 } else {return 'Passwords dont match'}
  
 
 } 
-  ) */
+  ) 
 
 
 module.exports = router;
