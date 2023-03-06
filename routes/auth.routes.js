@@ -124,12 +124,20 @@ router.post("/update-membership-plan", async (req, res, next) => {
 router.post('/profile/settings', async (req, res, next) => {
     const { email, username } = req.body 
     try { 
-        const findUser = await User.find({username})
-        const findEmail = await User.find({email})
-        if (findEmail.length || findUser.length) {
-            res.status(400).json({message: "Username or email already registered"})
-            return
-        } else {
+if(req.body.currentUser.username !== req.body.updatedUserName){
+    const findUser = await User.find({username})
+    if (findUser.length) {
+        res.status(400).json({message: "Username already registered"})
+        return
+     }
+}
+if(req.body.currentUser.email !== req.body.email){
+    const findEmail = await User.find({email})
+    if (findEmail.length) {
+        res.status(400).json({message: "email already registered"})
+        return
+     }
+    }
             const currentUser = await User.find ({email : req.body.currentUser.email})
             const passwordMatch = bcrypt.compareSync(req.body.password, currentUser[0].passwordHash)
             if (passwordMatch) {
@@ -142,6 +150,9 @@ router.post('/profile/settings', async (req, res, next) => {
                             username: req.body.updatedUserName ,
                             passwordHash : updatedPasswordHash
                         }
+const updatedUserDB = await User.findOneAndUpdate({email :req.body.currentUser.email }, updatedUser , {new : true} )
+
+                        req.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username })
                     } else { 
                         req.status(400).json({message: "The passwords do not match."})
                         return
@@ -150,13 +161,16 @@ router.post('/profile/settings', async (req, res, next) => {
                     updatedUser = {
                         email: req.body.updatedEmail,
                         username: req.body.updatedUserName ,
-                    } 
+                    }
+const updatedUserDB = await User.findOneAndUpdate({email :req.body.currentUser.email }, updatedUser , {new : true} )
+
+                    req.status(201).json({message : 'user was updated', email :updatedUserDB.email , username : updatedUserDB.username })
+               
                 }
             } else {
                 res.status(403).json({message: "incorrect Password."})
                 return
             }
-        }
     } catch (error) {
         console.log("Error updating user:" , error);
         res.status(500).json({message: "Server error"})
