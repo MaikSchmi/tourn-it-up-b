@@ -124,14 +124,14 @@ router.post("/update-membership-plan", async (req, res, next) => {
 router.post('/profile/settings', async (req, res, next) => {
     const { email, username } = req.body 
     try { 
-        if(req.body.currentUser.username !== req.body.updatedUserName){
+        if (req.body.currentUser.username !== req.body.username) {
             const findUser = await User.find({username})
             if (findUser.length) {
                 res.status(400).json({message: "Username already registered"})
                 return
             }
         }
-        if(req.body.currentUser.email !== req.body.email){
+        if (req.body.currentUser.email !== req.body.email) {
             const findEmail = await User.find({email})
             if (findEmail.length) {
                 res.status(400).json({message: "email already registered"})
@@ -139,7 +139,9 @@ router.post('/profile/settings', async (req, res, next) => {
             }
         }
         const currentUser = await User.find ({email : req.body.currentUser.email})
+        console.log(currentUser);
         const passwordMatch = bcrypt.compareSync(req.body.password, currentUser[0].passwordHash)
+        console.log(req.body.password, currentUser[0].passwordHash);
         if (passwordMatch) {
             let updatedUser = {} 
             if (req.body.updatedPassword !== '' && req.body.repeatUpdatedPassword !== '' ) {
