@@ -198,5 +198,26 @@ router.post('/profile/settings', async (req, res, next) => {
     }
 });
 
+router.post('/profile/delete' , async (req, res , next) => {
+
+try {
+    const  email = req.body.currentUser.email
+    const findUser = await User.findOne({email : email }).populate('tournaments')
+  
+    for (let i =0 ; i< findUser.tournaments.length ; i++) {
+const affectedTournament = findUser.tournaments[i] 
+console.log(affectedTournament)
+    if (affectedTournament.organizer._id === findUser._id){
+            await Tournament.findByIdAndDelete(affectedTournament._id )}
+     else {
+const removeUser =  affectedTournament.indexOf(affectedTournament.organizer._id)
+        affectedTournament.splice(removeUser)}}
+// const deleteUser =  await User.findOneAndDelete({email : email } )
+   // res.status(201).json({message : 'user account was Deleted'});    
+}
+catch(err){console.log(err)}
+})
+
+
 module.exports = router;
 
