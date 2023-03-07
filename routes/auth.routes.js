@@ -50,7 +50,7 @@ router.post("/signup", async (req, res, next) => {
 });
 
 router.post('/login', async (req, res, next) => {
-    const  email = req.body.email
+    const email = req.body.email
     try {
         const getUser = await User.find({email})
         if (getUser.length) {
@@ -77,11 +77,35 @@ router.post('/login', async (req, res, next) => {
     }
 });
 
+
 router.get('/verify', isAuthenticated, (req, res, next) => {
     if (req.payload) {
         res.json(req.payload)
     }
 });
+
+router.post("/update-token", async (req, res, next) => {
+    const email = req.body.email;
+    try {
+        const getUser = await User.find({email})
+        if (getUser.length) {
+            const payload = {_id: getUser[0]._id, email: getUser[0].email, username: getUser[0].username, status: getUser[0].status, tournaments: getUser[0].tournaments, interest: getUser[0].interest }
+                const token = jwt.sign(
+                    payload,
+                    process.env.TOKEN_SECRET,
+                    { 
+                        algorithm: "HS256",
+                        expiresIn: "24h"
+                    }) 
+                res.status(200).json({token})
+        } else {
+            res.status(403).json({message: "User not found."})
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(403).json({message: "Unable to create a new token."});
+    }
+})
 
 router.post("/update-interests/:username", async (req, res, next) => {
     console.log(req.body, req.params.username)
