@@ -61,8 +61,8 @@ router.post('/login', async (req, res, next) => {
                 payload,
                 process.env.TOKEN_SECRET,
                 { 
-                algorithm: "HS256",
-                expiresIn: "24h"
+                    algorithm: "HS256",
+                    expiresIn: "24h"
                 }) 
                 res.status(200).json({token})
             } else {
@@ -109,17 +109,16 @@ router.post("/update-membership-plan", async (req, res, next) => {
       } else if (req.body.plan === "premium") {
         newStatus = "Premium Member";
       }
-      const nowUpdatedUser = await User.findOneAndUpdate({username: req.body.user}, {status: newStatus}, {new: true})
-      console.log(nowUpdatedUser);
-      res.status(201).json("User updated successfully");
+      await User.findOneAndUpdate({username: req.body.user}, {status: newStatus}, {new: true})
+      res.status(201).json({message: "User updated successfully", newStatus});
     } catch (error) {
       console.log("Error updating the user status: ", error),
-      res.status(400).json("Error updating user: ", error);
+      res.status(400).json({message: "Error updating user: "}, error);
     }
   });
 
 
-//updateUser
+
 
 router.post('/profile/settings', async (req, res, next) => {
     const { email, username } = req.body 

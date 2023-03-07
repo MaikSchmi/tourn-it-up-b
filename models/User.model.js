@@ -32,6 +32,13 @@ const userSchema = new Schema(
     },
     tournaments: {
       type: [Schema.Types.ObjectId]
+    },
+    comments: {
+      type: [Schema.Types.ObjectId]
+    },
+    commentCount: {
+      type: Number,
+      default: 0,
     }
   },
   {
