@@ -62,7 +62,7 @@ router.post('/login', async (req, res, next) => {
                 process.env.TOKEN_SECRET,
                 { 
                     algorithm: "HS256",
-                    expiresIn: "24h"
+                    expiresIn: "8h"
                 }) 
                 res.status(200).json({token})
             } else {
@@ -95,7 +95,7 @@ router.post("/update-token", async (req, res, next) => {
                     process.env.TOKEN_SECRET,
                     { 
                         algorithm: "HS256",
-                        expiresIn: "24h"
+                        expiresIn: "8h"
                     }) 
                 res.status(200).json({token})
         } else {
