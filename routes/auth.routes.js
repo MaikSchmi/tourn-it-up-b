@@ -105,23 +105,28 @@ router.get('/verify', isAuthenticated, (req, res, next) => {
 router.post("/update-token", async (req, res, next) => {
     const email = req.body.email;
     try {
-        const getUser = await User.find({email})
-        if (getUser.length) {
+        const getUser = await User.findOne({email: email})
+        .populate({
+            path: "friendsList",
+            select: "username",
+            model: "User",
+        });
+        if (getUser) {
             const payload = {
-                _id: getUser[0]._id, 
-                email: getUser[0].email, 
-                username: getUser[0].username, 
-                status: getUser[0].status, 
-                tournaments: getUser[0].tournaments, 
-                interest: getUser[0].interest, 
-                slogan: getUser[0].slogan,
-                profileImage: getUser[0].profileImage,
-                profileBackgroundImage: getUser[0].profileBackgroundImage,
-                profileBackgroundColor: getUser[0].profileBackgroundColor,
-                profileTextColor: getUser[0].profileTextColor,
-                commentCount: getUser[0].commentCount,
-                messages: getUser[0].messages,
-                friendsList: getUser[0].friendsList
+                _id: getUser._id, 
+                email: getUser.email, 
+                username: getUser.username, 
+                status: getUser.status, 
+                tournaments: getUser.tournaments, 
+                interest: getUser.interest, 
+                slogan: getUser.slogan,
+                profileImage: getUser.profileImage,
+                profileBackgroundImage: getUser.profileBackgroundImage,
+                profileBackgroundColor: getUser.profileBackgroundColor,
+                profileTextColor: getUser.profileTextColor,
+                commentCount: getUser.commentCount,
+                messages: getUser.messages,
+                friendsList: getUser.friendsList
                 }
 
                 const token = jwt.sign(
@@ -139,7 +144,98 @@ router.post("/update-token", async (req, res, next) => {
         console.log(error);
         res.status(403).json({message: "Unable to create a new token."});
     }
-})
+});
+
+router.get("/profile/find-user/:username", async (req, res, next) => {
+    const { username } = req.params;
+    const usernameLC = username.toLowerCase();
+    try {
+        const userProfile = await User.findOne({usernameLC: usernameLC})
+        .populate({
+            path: "tournaments",
+            select: "name",
+            model: "Tournament",
+        })
+        .populate({
+            path: "friendsList",
+            select: "profileImage username slogan",
+            model: "User",
+        });
+        if (userProfile) {
+            const userData = {
+                _id: userProfile._id,
+                username: userProfile.username,
+                slogan: userProfile.slogan,
+                status: userProfile.status,
+                interest: userProfile.interest,
+                friendsList: userProfile.friendsList,
+                tournaments: userProfile.tournaments,
+                profileImage: userProfile.profileImage,
+                profileBackgroundImage: userProfile.profileBackgroundImage,
+                profileTextColor: userProfile.profileTextColor,
+            }
+            res.status(200).json({userData: userData});
+        } else {
+            res.status(404).json({message: "User not found"});
+        }
+    } catch (error) {
+        console.log("Error processing request: ", error);
+        res.status(400).json({message: error});
+    }
+});
+
+router.post("/profile/add-friend/:username", async (req, res, next) => {
+    const { username } = req.params;
+    const { currentUser } = req.body;
+    try {
+        const friend = await User.find({username: username});
+        const requestingUser = await User.findOne({username: currentUser});
+        let alreadyFriends = false;
+        for (let i = 0; i < requestingUser.friendsList.length; i++) {
+            if (JSON.stringify(friend[0]._id).split(`"`)[1] === JSON.stringify(requestingUser.friendsList[i]._id).split(`"`)[1]) {
+                alreadyFriends = true;
+                break;
+            }
+        }
+        if (!alreadyFriends) {
+            requestingUser.friendsList.push(friend[0]._id);
+            await requestingUser.save();
+            res.status(200).json({message: "Friend successfully added.", newFriendsList: requestingUser.friendsList});
+        } else {
+            res.status(403).json({message: "Error, already friends"});
+        }
+    } catch (error) {
+        console.log("Error adding friend: ", error);
+        res.status(400).json({message: error});
+    }
+});
+
+router.post("/profile/remove-friend/:username", async (req, res, next) => {
+    const { username } = req.params;
+    const { currentUser } = req.body;
+    try {
+        const friend = await User.find({username: username});
+        const requestingUser = await User.findOne({username: currentUser});
+        let index = -1;
+        for (let i = 0; i < requestingUser.friendsList.length; i++) {
+            if (JSON.stringify(friend[0]._id).split(`"`)[1] === JSON.stringify(requestingUser.friendsList[i]._id).split(`"`)[1]) {
+                index = i;
+                break;
+            }
+        }
+        if (index !== -1) {
+            requestingUser.friendsList.splice(index, 1);
+            await requestingUser.save();
+            res.status(200).json({message: "Friend successfully removed.", newFriendsList: requestingUser.friendsList});
+        } else {
+            res.status(403).json({message: "Error, friend not found"});
+        }
+    } catch (error) {
+        console.log("Error adding friend: ", error);
+        res.status(400).json({message: error});
+    }
+    
+});
 
 router.post("/update-interests/:username", async (req, res, next) => {
     try {
