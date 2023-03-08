@@ -215,14 +215,14 @@ router.get("/all", async (req, res, next) => {
     const allTournaments = await Tournament.find().populate({
       path: "participants",
       select: "username",
-      model: "User"
+      model: "User",
     }).populate({
       path: "organizer",
       select: "username",
-      model: "User"
+      model: "User",
     });
 
-    res.status(200).json(allTournaments);
+    res.status(201).json(allTournaments);
   } catch(error) {
     console.log("Error fetching tournaments: ", error);
   }
