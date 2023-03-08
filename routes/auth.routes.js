@@ -5,7 +5,6 @@ const jwt = require ('jsonwebtoken')
 const isAuthenticated = require('../middlewares/jwt.middleware')
 
 router.post("/signup", async (req, res, next) => {
-    console.log(req.body)
     const { email, username } = req.body 
 
     try {
@@ -56,7 +55,23 @@ router.post('/login', async (req, res, next) => {
         if (getUser.length) {
             const passwordMatch = bcrypt.compareSync(req.body.password, getUser[0].passwordHash)
             if (passwordMatch) {
-                const payload = {_id: getUser[0]._id, email: getUser[0].email, username: getUser[0].username, status: getUser[0].status, tournaments: getUser[0].tournaments, interest: getUser[0].interest }
+                const payload = {
+                    _id: getUser[0]._id, 
+                    email: getUser[0].email, 
+                    username: getUser[0].username, 
+                    status: getUser[0].status, 
+                    tournaments: getUser[0].tournaments, 
+                    interest: getUser[0].interest, 
+                    slogan: getUser[0].slogan,
+                    profileImage: getUser[0].profileImage,
+                    profileBackgroundImage: getUser[0].profileBackgroundImage,
+                    profileBackgroundColor: getUser[0].profileBackgroundColor,
+                    profileTextColor: getUser[0].profileTextColor,
+                    commentCount: getUser[0].commentCount,
+                    messages: getUser[0].messages,
+                    friendsList: getUser[0].friendsList
+                }
+
                 const token = jwt.sign(
                 payload,
                 process.env.TOKEN_SECRET,
@@ -89,7 +104,23 @@ router.post("/update-token", async (req, res, next) => {
     try {
         const getUser = await User.find({email})
         if (getUser.length) {
-            const payload = {_id: getUser[0]._id, email: getUser[0].email, username: getUser[0].username, status: getUser[0].status, tournaments: getUser[0].tournaments, interest: getUser[0].interest }
+            const payload = {
+                _id: getUser[0]._id, 
+                email: getUser[0].email, 
+                username: getUser[0].username, 
+                status: getUser[0].status, 
+                tournaments: getUser[0].tournaments, 
+                interest: getUser[0].interest, 
+                slogan: getUser[0].slogan,
+                profileImage: getUser[0].profileImage,
+                profileBackgroundImage: getUser[0].profileBackgroundImage,
+                profileBackgroundColor: getUser[0].profileBackgroundColor,
+                profileTextColor: getUser[0].profileTextColor,
+                commentCount: getUser[0].commentCount,
+                messages: getUser[0].messages,
+                friendsList: getUser[0].friendsList
+                }
+
                 const token = jwt.sign(
                     payload,
                     process.env.TOKEN_SECRET,
@@ -108,12 +139,13 @@ router.post("/update-token", async (req, res, next) => {
 })
 
 router.post("/update-interests/:username", async (req, res, next) => {
-    console.log(req.body, req.params.username)
     try {
         const updatedUser = await User.findOne({username: req.params.username});
+        updatedUser.interest.splice(0, updatedUser.interest.length);
         for (let i = 0; i < req.body.updateInterestsInDb.length; i++) {
             updatedUser.interest.push(req.body.updateInterestsInDb[i]);
         }
+        updatedUser.slogan = req.body.slogan
         await updatedUser.save();
         res.status(201).json({message: "Updated interests", interest: updatedUser.interest})
     } catch (error) {
@@ -161,8 +193,7 @@ router.post('/profile/settings', async (req, res, next) => {
                 return
             }
         }
-        const currentUser = await User.find ({email : req.body.currentUser.email})
-        console.log(currentUser);
+        const currentUser = await User.find ({email: req.body.currentUser.email})
         const passwordMatch = bcrypt.compareSync(req.body.password, currentUser[0].passwordHash)
         if (passwordMatch) {
             let updatedUser = {} 
