@@ -4,6 +4,7 @@ const User = require('../models/User.model')
 const jwt = require ('jsonwebtoken')
 const isAuthenticated = require('../middlewares/jwt.middleware');
 const Tournament = require("../models/Tournament.model");
+const fileUploader = require("../config/cloudinary.config");
 
 router.post("/signup", async (req, res, next) => {
     const { email, username } = req.body 
@@ -374,6 +375,34 @@ router.post('/profile/delete' , async (req, res , next) => {
         console.log(err)
     }
 })
+
+router.post("/uploadavatar/:username", fileUploader.single("imageUrl"), async (req, res, next) => {
+    console.log(req.file);
+    if (!req.file) {
+        next(new Error("No file uploaded!"));
+        return;
+    }
+    try {
+        await User.findOneAndUpdate({username: req.params.username}, {profileImage: req.file.path});
+        res.json({file: req.file.path})
+    } catch (error) {
+        
+    }
+});
+
+router.post("/uploadbg/:username", fileUploader.single("imageUrl"), async (req, res, next) => {
+    console.log(req.file);
+    if (!req.file) {
+        next(new Error("No file uploaded!"));
+        return;
+    }
+    try {
+        await User.findOneAndUpdate({username: req.params.username}, {profileBackgroundImage: req.file.path});
+        res.json({file: req.file.path})
+    } catch (error) {
+        
+    }
+});
 
 
 module.exports = router;

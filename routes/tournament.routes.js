@@ -234,24 +234,24 @@ router.get("/:id", async (req, res, next) => {
     const oneTournament = await Tournament.findById(req.params.id)
     .populate({
       path: "participants",
-      select: "username",
+      select: "username profileImage",
       model: "User"
     }).populate({
       path: "organizer",
-      select: "username",
+      select: "username profileImage",
       model: "User"
     }).populate({
       path:"comments",
       model: "Comment"
     })
 
+    console.log(oneTournament);
     if (oneTournament === null) {
       res.status(404).json({message: "Tournament not found"});
       return;
     }
 
     const promiseArr = [];
-    promiseArr.push(await User.findById(oneTournament.organizer));
     for (let i = 0; i < oneTournament.participants.length; i++) {
       promiseArr.push(await User.findById(oneTournament.participants[i]));
     }
