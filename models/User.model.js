@@ -39,6 +39,28 @@ const userSchema = new Schema(
     commentCount: {
       type: Number,
       default: 0,
+    },
+    profileImage: {
+      type: String,
+      default: "../images/avatar-generic.png"
+    },
+    profileBackgroundImage: {
+      type: String,
+      default: "../images/profile-background-generic.png"
+    },
+    profileBackgroundColor: {
+      type: String,
+      default: "#00000000",
+    },
+    profileTextColor: {
+      type: String,
+      default: "#FFFFFF",
+    },
+    friendsList: {
+      type: [Schema.Types.ObjectId],
+    },
+    messages: {
+      type: [Schema.Types.ObjectId],
     }
   },
   {
