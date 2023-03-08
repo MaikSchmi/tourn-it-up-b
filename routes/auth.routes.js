@@ -2,7 +2,8 @@ const router = require("express").Router();
 const bcrypt = require ('bcryptjs')
 const User = require('../models/User.model')
 const jwt = require ('jsonwebtoken')
-const isAuthenticated = require('../middlewares/jwt.middleware')
+const isAuthenticated = require('../middlewares/jwt.middleware');
+const Tournament = require("../models/Tournament.model");
 
 router.post("/signup", async (req, res, next) => {
     const { email, username } = req.body 
@@ -230,23 +231,47 @@ router.post('/profile/settings', async (req, res, next) => {
 });
 
 router.post('/profile/delete' , async (req, res , next) => {
+    try {
+        const email = req.body.currentUser.email;
+        const username = req.body.currentUser.username;
+        const findUser = await User.findOne({email : email })
+        
+        const tournamentPromiseArr = []
+        for (let i = 0 ; i< findUser.tournaments.length ; i++) {
+            tournamentPromiseArr.push(await Tournament.findById(findUser.tournaments[i]).populate({
+                path: "organizer",
+                select: "username",
+                model: "User"
+              }))
+        }
+        const resolved = await Promise.all(tournamentPromiseArr);
 
-try {
-    const  email = req.body.currentUser.email
-    const findUser = await User.findOne({email : email }).populate('tournaments')
-  
-    for (let i =0 ; i< findUser.tournaments.length ; i++) {
-const affectedTournament = findUser.tournaments[i] 
-console.log(affectedTournament)
-    if (affectedTournament.organizer._id === findUser._id){
-            await Tournament.findByIdAndDelete(affectedTournament._id )}
-     else {
-const removeUser =  affectedTournament.indexOf(affectedTournament.organizer._id)
-        affectedTournament.splice(removeUser)}}
-// const deleteUser =  await User.findOneAndDelete({email : email } )
-   // res.status(201).json({message : 'user account was Deleted'});    
-}
-catch(err){console.log(err)}
+        const tournamentsToDeletePromises = [];
+        const saveParticipantsPromises = [];
+        for (let i = 0; i < resolved.length; i++) {
+            if (resolved[i].organizer.username === username){
+                tournamentsToDeletePromises.push(await Tournament.findByIdAndDelete(resolved[i]._id))
+            } else {
+                let index = -1;
+                for (let j = 0; j < resolved[i].participants.length; j++) {
+                    if (JSON.stringify(resolved[i].participants[j]).split(`"`)[1] === JSON.stringify(findUser._id).split(`"`)[1]) {
+                        index = j;
+                        break;
+                    }
+                } 
+                resolved[i].participants.splice(index, 1);
+                saveParticipantsPromises.push(await resolved[i].save());
+            }
+        }
+        await Promise.all(tournamentsToDeletePromises);
+        await Promise.all(saveParticipantsPromises)
+
+        await User.findOneAndDelete({email : email } )
+        res.status(201).json({message : 'user account was Deleted'}); 
+    }
+    catch(err) {
+        console.log(err)
+    }
 })
 
 
