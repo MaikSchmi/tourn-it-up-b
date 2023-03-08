@@ -219,7 +219,7 @@ router.get("/all", async (req, res, next) => {
     }).populate({
       path: "organizer",
       select: "username",
-      model: "User"
+      model: "User",
     });
 
     res.status(201).json(allTournaments);
