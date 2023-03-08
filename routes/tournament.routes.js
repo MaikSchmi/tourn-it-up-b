@@ -215,7 +215,7 @@ router.get("/all", async (req, res, next) => {
     const allTournaments = await Tournament.find().populate({
       path: "participants",
       select: "username",
-      model: "User"
+      model: "User",
     }).populate({
       path: "organizer",
       select: "username",
