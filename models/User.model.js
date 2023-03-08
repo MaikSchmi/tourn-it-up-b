@@ -19,6 +19,10 @@ const userSchema = new Schema(
       unique: true,
       required: [true, 'Username is required.']
     },
+    usernameLC: {
+      type: String,
+      unique: true,
+    },
     status: {
       type: String,
       enum: ["Member", "Paid Member", "Premium Member", "Inactive"],

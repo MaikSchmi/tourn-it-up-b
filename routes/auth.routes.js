@@ -7,9 +7,10 @@ const Tournament = require("../models/Tournament.model");
 
 router.post("/signup", async (req, res, next) => {
     const { email, username } = req.body 
+    const usernameLC = username.toLowerCase();
 
     try {
-        const findUser = await User.find({username: username}) 
+        const findUser = await User.find({usernameLC: usernameLC}) 
         if (findUser.length) {
             res.status(400).json({message: "Username already registered"})
             return;
@@ -39,6 +40,7 @@ router.post("/signup", async (req, res, next) => {
         const user = await User.create({
             email,
             username,
+            usernameLC,
             passwordHash: passwordHash
         });
         const createdUser = {email: user.email, username: user.username}
@@ -179,9 +181,11 @@ router.post("/update-membership-plan", async (req, res, next) => {
 
 router.post('/profile/settings', async (req, res, next) => {
     const { email, username } = req.body 
+    const usernameLC = username.toLowerCase();
     try { 
         if (req.body.currentUser.username !== req.body.username) {
-            const findUser = await User.find({username})
+
+            const findUser = await User.find({usernameLC: usernameLC})
             if (findUser.length) {
                 res.status(400).json({message: "Username already registered"})
                 return
@@ -204,6 +208,7 @@ router.post('/profile/settings', async (req, res, next) => {
                     updatedUser = {
                         email: req.body.email,
                         username: req.body.username ,
+                        usernameLC: usernameLC,
                         passwordHash : updatedPasswordHash
                     }
                     const updatedUserDB = await User.findOneAndUpdate({email :req.body.currentUser.email }, updatedUser , {new : true} )
