@@ -222,7 +222,7 @@ router.get("/all", async (req, res, next) => {
       model: "User"
     });
 
-    res.status(200).json(allTournaments);
+    res.status(201).json(allTournaments);
   } catch(error) {
     console.log("Error fetching tournaments: ", error);
   }
