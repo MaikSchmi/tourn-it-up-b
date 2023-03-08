@@ -238,13 +238,16 @@ try {
     for (let i =0 ; i< findUser.tournaments.length ; i++) {
 const affectedTournament = findUser.tournaments[i] 
 console.log(affectedTournament)
+console.log(affectedTournament._id)
+    console.log(findUser._id)
+
     if (affectedTournament.organizer._id === findUser._id){
-            await Tournament.findByIdAndDelete(affectedTournament._id )}
+            await Tournament.findByIdAndDelete(affectedTournament.organizer._id )}
      else {
 const removeUser =  affectedTournament.indexOf(affectedTournament.organizer._id)
         affectedTournament.splice(removeUser)}}
-// const deleteUser =  await User.findOneAndDelete({email : email } )
-   // res.status(201).json({message : 'user account was Deleted'});    
+ const deleteUser =  await User.findOneAndDelete({email : email } )
+   res.status(201).json({message : 'user account was Deleted'});    
 }
 catch(err){console.log(err)}
 })
