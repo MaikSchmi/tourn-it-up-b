@@ -18,7 +18,7 @@ const syncTournamentEntries = async () => {
   const allTournaments = await Tournament.find();
   const promiseArr = [];
   for (let i = 0; i < allTournaments.length; i++) {
-    if (allTournaments[i].startDate <= today || (allTournaments[i].maxParticipants > 0 && allTournaments[i].participants.length + 1 >= allTournaments[i].maxParticipants)) {
+    if (allTournaments[i].startDate <= today || ((allTournaments[i].maxParticipants > 0 && allTournaments[i].participants.length + 1 >= allTournaments[i].maxParticipants) && !allTournaments[i].professionsRequired)) {
       promiseArr.push(await Tournament.findByIdAndUpdate(allTournaments[i]._id, {status: "Closed"}))
     } 
     if (allTournaments[i].endDate < today) {
@@ -35,7 +35,6 @@ router.post("/create", async (req, res, next) => {
   if (profReq) {
     profArr = req.body.formDetails.professionsString.split(',');
   }
-  console.log(profArr);
 
   try {
     const tournamentOrganizer = await User.findOne({username: req.body.formDetails.organizer});
@@ -116,7 +115,19 @@ router.post("/update/:id", async(req, res, next) => {
       res.status(400).json("Please fill out all the required fields.");
     } else {
       await Tournament.findByIdAndUpdate(req.params.id, updatedTournamentDetails, {new: true});
-      if (tournament.maxParticipants === tournament.participants.length + 1) tournament.status = "Closed";
+      if (tournament.maxParticipants === tournament.participants.length + 1 && !tournament.professionsRequired) tournament.status = "Closed";
+      if (tournament.professionsRequired) {
+        let profTournamentFull = false;
+        for (let i = 1; i < tournament.professions.length; i++) {
+          if (tournament.professions[i] === tournament.participantSlots[i]) {
+            break;
+          }
+          if (i === tournament.professions.length - 2 && tournament.professions[i] !== tournament.participantSlots[i]) {
+            profTournamentFull = true;
+          }
+        }
+        if (profTournamentFull) tournament.status = "Closed";
+      }
       await tournament.save();
       res.status(200).json(req.params.id);
     }
@@ -205,7 +216,7 @@ router.post("/updateparticipants/:id/", async (req, res, next) => {
   const tournamentId = req.params.id;
   const participant = req.body.user
   try {
-    const participantInDb = await User.findOne({username: participant.username});
+    const participantInDb = await User.findOne({username: participant});
     if (participantInDb) {
       const updatedTournament = await Tournament.findById(tournamentId).populate("participants");
       if (req.body.signup) {
@@ -219,10 +230,28 @@ router.post("/updateparticipants/:id/", async (req, res, next) => {
           }
         } 
         if (!userRegistered) {
+          if (updatedTournament.professionsRequired) {
+            const profSlot = req.body.slot;
+            updatedTournament.participantSlots[profSlot] = participantInDb.username;
+          } 
           updatedTournament.participants.push(participantInDb._id);
           participantInDb.tournaments.push(updatedTournament._id);
           await participantInDb.save();
-          if (updatedTournament.participants.length + 1 >= updatedTournament.maxParticipants) updatedTournament.status = "Closed";
+          if (updatedTournament.participants.length + 1 >= updatedTournament.maxParticipants && !updatedTournament.professionsRequired) {
+            updatedTournament.status = "Closed";
+          }
+          if (updatedTournament.professionsRequired) {
+            let profTournamentFull = false;
+            for (let i = 0; i < updatedTournament.professions.length; i++) {
+              if (i > 0 && updatedTournament.professions[i] === updatedTournament.participantSlots[i]) {
+                break;
+              }
+              if (i > 0 && i === updatedTournament.professions.length - 2 && updatedTournament.professions[i] !== updatedTournament.participantSlots[i]) {
+                profTournamentFull = true;
+              }
+            }
+            if (profTournamentFull) updatedTournament.status = "Closed";
+          }
           await updatedTournament.save();
           res.status(201).json({tournamentId: updatedTournament._id, user: participantInDb});
         } else {
@@ -249,6 +278,11 @@ router.post("/updateparticipants/:id/", async (req, res, next) => {
           }
         }
         if (userRegistered) {
+          if (updatedTournament.professionsRequired) {
+            const profSlot = req.body.slot;
+            updatedTournament.participantSlots[profSlot] = updatedTournament.professions[profSlot];
+            if (updatedTournament.status === "Closed") updatedTournament.status = "Open";
+          } 
           updatedTournament.participants.splice(participantIndex, 1);
           await updatedTournament.save();
           participantInDb.tournaments.splice(tournamentIndex, 1);
