@@ -96,7 +96,6 @@ router.post('/login', async (req, res, next) => {
     }
 });
 
-
 router.get('/verify', isAuthenticated, (req, res, next) => {
     if (req.payload) {
         res.json(req.payload)

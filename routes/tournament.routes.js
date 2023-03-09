@@ -233,14 +233,11 @@ router.get("/:id", async (req, res, next) => {
     // Get Tournament
     const oneTournament = await Tournament.findById(req.params.id)
     .populate({
-      path: "participants",
+      path: "participants organizer",
       select: "username profileImage",
       model: "User"
-    }).populate({
-      path: "organizer",
-      select: "username profileImage",
-      model: "User"
-    }).populate({
+    })
+    .populate({
       path:"comments",
       model: "Comment"
     })
@@ -258,10 +255,9 @@ router.get("/:id", async (req, res, next) => {
     const participantArr = [];
     const participants = await Promise.all(promiseArr);
     for (i = 0; i < participants.length; i++) {
-      participantArr.push({id: JSON.stringify(participants[i]._id).split(`"`)[1], username: participants[i].username})
+      participantArr.push({id: JSON.stringify(participants[i]._id).split(`"`)[1], username: participants[i].username, profileImage: participants[i].profileImage})
     }
-    console.log(oneTournament);
-
+  
     res.status(200).json({tournament: oneTournament, participants: participantArr});
   } catch (error) {
     console.log("Error fetching tournament: ", error);
