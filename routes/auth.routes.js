@@ -5,6 +5,7 @@ const jwt = require ('jsonwebtoken')
 const isAuthenticated = require('../middlewares/jwt.middleware');
 const Tournament = require("../models/Tournament.model");
 const fileUploader = require("../config/cloudinary.config");
+const Message = require("../models/Messages.model");
 
 router.post("/signup", async (req, res, next) => {
     const { email, username } = req.body 
@@ -272,7 +273,58 @@ router.post("/update-membership-plan", async (req, res, next) => {
     }
   });
 
+router.get("/profile/messages/:username", async (req, res, next) => {
+    const username = req.params.username;
+    try {
+        const user = await User.findOne({username: username});
+        const promiseArr = [];
+        for (let i = 0; i < user.messages.length; i++) {
+            promiseArr.push(await Message.findById(user.messages[i])            
+            .populate({
+                path: "from to",
+                select: "username",
+                model: "User",
+            })
+            .populate({
+                path: "relatedTournament",
+                select: "name",
+                model: "Tournament"
+            }))
+        }
+        const messageArr = await Promise.all(promiseArr);
+        console.log(messageArr);
+        res.status(200).json({message: "Here you go.", messages: messageArr});
+    } catch (error) {
+        console.log("Error retrieve messages: ", error);
+        res.status(500).json({message: "Error retrieve messages."})
+    }   
+});
 
+router.post("/profile/messages/delete/:messageId", async (req, res, next) => {
+    const { messageId } = req.params;
+    const { currentUser } = req.body;
+    try {
+        const user = await User.findOne({username: currentUser});
+        let index = -1;
+        for (let i = 0; i < user.messages.length; i++) {
+            if (JSON.stringify(user.messages[i]).split(`"`)[1] === messageId) {
+                index = i;
+                break;
+            }
+        }
+        if (index !== -1) {
+            user.messages.splice(index, 1);
+            await user.save();
+            await Message.findByIdAndDelete(messageId);
+            res.status(200).json({message: "Message deleted successfully.", messages: user.messages})
+        } else {
+            res.status(404).json({message: "Error, message not found."});
+        }
+    } catch (error) {
+        console.log("Error deleting message: ", error);
+        res.status(500).json({message: `Error deleting message: ${error}`})
+    }
+});
 
 
 router.post('/profile/settings', async (req, res, next) => {

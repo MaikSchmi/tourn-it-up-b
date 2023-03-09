@@ -2,6 +2,7 @@ const Comment = require("../models/Comment.model");
 const Tournament = require("../models/Tournament.model");
 const User = require("../models/User.model");
 const fileUploader = require("../config/cloudinary.config");
+const Message = require("../models/Messages.model");
 
 const router = require("express").Router();
 
@@ -124,6 +125,7 @@ router.post("/delete/:id", async (req, res, next) => {
   try {
     const tournament = await Tournament.findById(tournamentId);
     const organizer = await User.findById(tournament.organizer);
+    // Delete for Organizer
     if (deletingUser === organizer.username) {
       let index = -1;
       for (let i = 0; i < organizer.tournaments.length; i++) {
@@ -135,10 +137,56 @@ router.post("/delete/:id", async (req, res, next) => {
       }
       organizer.tournaments.splice(index, 1);
       await organizer.save();
+
+      // Delete for Participants
+      const participantsPromiseArr = [];
+      const notificationPromises = [];
+      for (let i = 0; i < tournament.participants.length; i++) {
+        participantsPromiseArr.push(await User.findById(tournament.participants[i]._id));
+      }
+      const participants = await Promise.all(participantsPromiseArr);
+      const participantsRemoveTournament = [];
+      for (let i = 0; i < participants.length; i++) {
+        let pIndex = -1;
+        for (let j = 0; j < participants[i].tournaments.length; j++) {
+          if (JSON.stringify(participants[i].tournaments[j]._id).split(`"`)[1] === tournamentId) {
+            pIndex = j;
+            break;
+          }
+        }
+        if (pIndex !== -1) {
+          participants[i].tournaments.splice(pIndex, 1);
+          participantsRemoveTournament.push(await participants[i].save());
+        }
+        notificationPromises.push(await Message.create({
+          from: organizer._id,
+          to: participants[i]._id,
+          subject: "A Tournament you're participating in has been cancelled.",
+          message: `${tournament.name} has been removed by ${organizer.username}`,
+          type: "Message",
+          status: "Unread"
+        }));
+      }
+      const attachNotificationPromises = [];
+      const allNotifications = await Promise.all(notificationPromises);
+      for (let i = 0; i < participants.length; i++) {
+        participants[i].messages.push(allNotifications[i]);
+        attachNotificationPromises.push(await participants[i].save());
+      }
+
+      // Delete comments
+      const commentPromises = [];
+      for (let i = 0; i < tournament.comments.length; i++) {
+        commentPromises.push(await Comment.findByIdAndDelete(tournament.comments[i]._id));
+      }
+      
+      Promise.all(commentPromises);
+      Promise.all(participantsRemoveTournament);
+
       await Tournament.findByIdAndDelete(tournamentId); 
-      res.status(201).json("Tournament deleted successfully");
+      res.status(201).json({message: "Tournament deleted successfully"});
     } else {
-      res.status(403).json("Not authorized to delete Tournament!");
+      res.status(403).json({message: "Not authorized to delete Tournament!"});
     }
   } catch(error) {
     res.status(400).json("Error deleting the tournament: ", error);
@@ -304,6 +352,37 @@ router.get("/search/find-name/:name", async (req, res, next) => {
   }
 });
 
+router.post("/invite/:tournamentId", async (req, res, next) => {
+  const { tournamentId } = req.params;
+  const { from, to } = req.body;
+  console.log(tournamentId, from, to)
+  try {
+    const sender = await User.find({username: from})
+    const recipient = await User.find({username: to})
+    const tournament = await Tournament.findById(tournamentId);
+
+    if (sender.length && recipient.length) {
+      const invitation = await Message.create({
+        from: sender[0]._id,
+        to: recipient[0]._id,
+        subject: "You have been invited to a Tournament!",
+        message: `"${from}" is inviting you to join Tournament: ${tournament.name}`,
+        type: "Invitation",
+        relatedTournament: tournament._id,
+        status: "Unread"
+      })
+      console.log(recipient);
+      recipient[0].messages.push(invitation._id);
+      await recipient[0].save();
+      res.status(201).json({message: "Invitation sent successfully."})
+    } else {
+      res.status(404).json({message: "User not found."})
+    }
+  } catch (error) {
+    console.log("Error: ", error);
+    res.status(400).json({message: `Error processing request: ${error}`})
+  }
+});
 
 router.post("/comments/add", async (req, res, next) => {
   if (req.body.comment === "") {
