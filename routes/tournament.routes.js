@@ -245,7 +245,6 @@ router.get("/:id", async (req, res, next) => {
       model: "Comment"
     })
 
-    console.log(oneTournament);
     if (oneTournament === null) {
       res.status(404).json({message: "Tournament not found"});
       return;
@@ -261,6 +260,7 @@ router.get("/:id", async (req, res, next) => {
     for (i = 0; i < participants.length; i++) {
       participantArr.push({id: JSON.stringify(participants[i]._id).split(`"`)[1], username: participants[i].username})
     }
+    console.log(oneTournament);
 
     res.status(200).json({tournament: oneTournament, participants: participantArr});
   } catch (error) {
