@@ -6,30 +6,29 @@ guests can participate in a chalenge,premier Users can create and organize a cha
 Feel free to navigate through the Tournaments based on your interrests and location.
 
 Services:
- Auth Service
+Auth Service
         auth.login(user)  // user do it through FrontEnd
         auth.signup(user)   // user do it through
         auth.logout()
         auth.getUser() // synchronous
-    Tournaments Service
+Tournaments Service
         Tournaments.list()
         Tournaments.create(data)
         Tournaments.detail(id)
-        Tournaments.Uodate(id)
         Tournaments.remove(id)
         Tournaments.Update(id)
-    comments services:
-         comments.creat()
+comments services:
+         comments.create()
          comments.delete()
          comments.update()
 Models:
     User.Model
-    Tournamet.model
-    Comment.model
+    Tournamet.Model
+    Comment.Model
 
 API Endpoints/Backend Routes
-Auth Routs:
-GET /auth/profile
+Auth Routes:
+GET  /auth/profile
 POST /auth/profile/addFriend
 POST /auth/signup
         body:
@@ -42,9 +41,9 @@ POST /auth/login
             password
 POST /auth/logout
         Button-Delete Token
-    GET /comments/delete/:id
+GET  /comments/delete/:id
 POST /profile/settings
-POST /profile/delete'
+POST /profile/delete
 POST /update-membership-plan
 POST /uploadavatar/:username
 POST /uploadbg/:username
