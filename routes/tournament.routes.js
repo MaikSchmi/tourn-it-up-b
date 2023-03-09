@@ -30,6 +30,13 @@ const syncTournamentEntries = async () => {
 
 
 router.post("/create", async (req, res, next) => {
+  let profArr = [];
+  const profReq = req.body.formDetails.professionsRequired;
+  if (profReq) {
+    profArr = req.body.formDetails.professionsString.split(',');
+  }
+  console.log(profArr);
+
   try {
     const tournamentOrganizer = await User.findOne({username: req.body.formDetails.organizer});
     const newTournament = {
@@ -48,7 +55,8 @@ router.post("/create", async (req, res, next) => {
         minParticipants: req.body.formDetails.minParticipants,
         status: "Open",
         professionsRequired: req.body.formDetails.professionsRequired,
-        professions: req.body.formDetails.professions,
+        professions: profArr,
+        participantSlots: profArr,
         startDate: req.body.formDetails.startDate,
         endDate: req.body.formDetails.endDate,
     }
@@ -62,7 +70,7 @@ router.post("/create", async (req, res, next) => {
     if (newTournament.name === "" || newTournament.description === "" || newTournament.type === "" ||
     newTournament.challenge === "" || newTournament.organizer === "" || newTournament.locationCountry === "" ||
     !req.body.formDetails.tosChecked || newTournament.endDate < newTournament.startDate || newTournament.startDate <= today ||
-    ((newTournament.maxParticipants > 0 & newTournament.minParticipants > 0) && newTournament.maxParticipants < newTournament.minParticipants)) {
+    ((newTournament.maxParticipants > 0 && newTournament.minParticipants > 0) && newTournament.maxParticipants < newTournament.minParticipants)) {
       res.status(400).json("Please fill out all the required fields.");
     } else {
       const createdTournament = await Tournament.create(newTournament);
@@ -179,7 +187,7 @@ router.post("/delete/:id", async (req, res, next) => {
       for (let i = 0; i < tournament.comments.length; i++) {
         commentPromises.push(await Comment.findByIdAndDelete(tournament.comments[i]._id));
       }
-      
+
       Promise.all(commentPromises);
       Promise.all(participantsRemoveTournament);
 

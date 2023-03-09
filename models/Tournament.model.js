@@ -64,6 +64,9 @@ const tournamentSchema = new Schema(
     professions: {
       type: [String],
     },
+    participantSlots: {
+      type: [String]
+    },
     startDate: {
       type: String,
     }, 
