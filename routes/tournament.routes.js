@@ -283,6 +283,7 @@ router.post("/updateparticipants/:id/", async (req, res, next) => {
             updatedTournament.participantSlots[profSlot] = updatedTournament.professions[profSlot];
             if (updatedTournament.status === "Closed") updatedTournament.status = "Open";
           } 
+          
           updatedTournament.participants.splice(participantIndex, 1);
           await updatedTournament.save();
           participantInDb.tournaments.splice(tournamentIndex, 1);

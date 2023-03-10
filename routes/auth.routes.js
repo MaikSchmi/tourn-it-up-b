@@ -399,11 +399,12 @@ router.post('/profile/delete' , async (req, res , next) => {
         }
         const resolved = await Promise.all(tournamentPromiseArr);
 
-        const tournamentsToDeletePromises = [];
-        const saveParticipantsPromises = [];
+        const tournamentsToDeletePromises = []; // Find and delete Organizer Tournaments
+        const saveParticipantsPromises = []; // Find as participant in Tournaments and remove to make space
+        
         for (let i = 0; i < resolved.length; i++) {
-            if (resolved[i].organizer.username === username){
-                tournamentsToDeletePromises.push(await Tournament.findByIdAndDelete(resolved[i]._id))
+            if (resolved[i].organizer.username === username) {
+                tournamentsToDeletePromises.push(await Tournament.findByIdAndDelete(resolved[i]._id));
             } else {
                 let index = -1;
                 for (let j = 0; j < resolved[i].participants.length; j++) {
