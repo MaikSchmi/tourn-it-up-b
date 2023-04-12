@@ -37,7 +37,7 @@ router.post("/signup", async (req, res, next) => {
         return;
     }
 
-    const passwordHash = bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(14) )
+    const passwordHash = bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(14))
     try {
         const user = await User.create({
             email,
@@ -47,7 +47,7 @@ router.post("/signup", async (req, res, next) => {
         });
         const createdUser = {email: user.email, username: user.username}
         res.status(201).json({createdUser});
-    }catch(error) {
+    } catch(error) {
         console.log(error)
         res.status(403).json({message: "Server Error or user / email already registered."})
     }
